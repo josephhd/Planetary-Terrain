@@ -54,16 +54,16 @@ public class PlanetController : MonoBehaviour {
                         currentActions++;
                     }
                 } else if (n.children.Length == 0 && n.subLevel < planetSettings.maxSubLevel) {
-                    float distance = Vector3.Distance(cameraPos, n.obj.position);
+                    float distance = (cameraPos - n.obj.position).sqrMagnitude;
 
-                    if (distance <= n.splitDist || n.subLevel < planetSettings.minSubLevel) {
+                    if (distance <= n.splitDist * n.splitDist || n.subLevel < planetSettings.minSubLevel) {
                         SplitNode(n);
                         currentActions++;
                     }
                 } else if (n.children.Length > 0) {
-                    float distance = Vector3.Distance(cameraPos, n.obj.position);
+                    float distance = (cameraPos - n.obj.position).sqrMagnitude;
 
-                    if (distance > n.splitDist && n.subLevel + 1 > planetSettings.minSubLevel) {
+                    if (distance > n.splitDist * n.splitDist && n.subLevel + 1 > planetSettings.minSubLevel) {
                         MergeNode(n);
                         currentActions++;
                     }
