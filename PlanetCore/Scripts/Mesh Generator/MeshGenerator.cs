@@ -66,7 +66,7 @@ public class MeshGenerator {
         GenerateUVs();
         GenerateEdgeSkirt();
 
-        meshData = new MeshData(vertices, triangles, uvs, normals, center + planetSettings.center);
+        meshData = new MeshData(vertices, triangles, uvs, normals, center + planetSettings.center, planetSettings.center);
         complete = true;
     }
 
@@ -278,12 +278,14 @@ public class MeshData {
     public readonly List<Vector3> normals;
     public readonly List<Vector2> uvs;
     public readonly Vector3Double centerPoint;
+    public readonly Vector3 planetCenter;
 
-    public MeshData (List<Vector3> Vertices, List<int> Triangles, List<Vector2> UVs, List<Vector3> Normals, Vector3Double Center) {
+    public MeshData (List<Vector3> Vertices, List<int> Triangles, List<Vector2> UVs, List<Vector3> Normals, Vector3Double Center, Vector3 PlanetCenter) {
         vertices = Vertices;
         triangles = Triangles;
         uvs = UVs;
         normals = Normals;
         centerPoint = Center;
+        planetCenter = PlanetCenter;
     }
 };

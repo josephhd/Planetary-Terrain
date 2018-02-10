@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿//TODO: further optimize nodes list by storing parents in nodes, and removing
+//parents from the node list if they are 2 subdivisions max from maximum sub level
+
+using System.Collections.Generic;
 using UnityEngine;
 using System.Threading;
 using VectorDoubles;
@@ -33,19 +36,16 @@ public class PlanetController : MonoBehaviour {
         InitializePlanet();
     }
 
-    //Reset action count
+    //Iterate through nodes and perform actions as necessary
     private void Update() {
         currentActions = 0;
-    }
-
-    //Iterate through nodes and perform actions as necessary
-    private void LateUpdate() {
+            
         Vector3 cameraPos = Camera.main.transform.position;
 
         //Loop through the list of nodes
         for (int i = 0; i < nodes.Count; i++) {
             Node n = nodes[i];
-
+          
             //Determine if the node should split, merge, or get create a mesh
             if (currentActions < MaxActions) {
                 if (n.generating) {
@@ -120,7 +120,6 @@ public class PlanetController : MonoBehaviour {
 
     //Splits this node into 4 children nodes
     private void SplitNode (Node node) {
-        //node.NodeState = Node.State.Splitting;
         node.nodeState = NodeState.Splitting;
 
         double offset = node.scale * 0.25;
@@ -128,7 +127,6 @@ public class PlanetController : MonoBehaviour {
         double c_scale = node.scale * 0.5;
 
         GameObject[] gos = new GameObject[4];
-
 
         Vector2Double[] uvs = new Vector2Double[] {
             new Vector2Double(node.uv.x - offset, node.uv.y + offset),
@@ -180,11 +178,14 @@ public class PlanetController : MonoBehaviour {
         node.obj.MeshFilter.sharedMesh = mesh;
         //node.obj.MeshCollider.sharedMesh = mesh;
 
-        node.obj.transform.position = new Vector3((float)meshGen.meshData.centerPoint.x, (float)meshGen.meshData.centerPoint.y, (float)meshGen.meshData.centerPoint.z);
-        node.obj.position = new Vector3((float)meshGen.meshData.centerPoint.x, (float)meshGen.meshData.centerPoint.y, (float)meshGen.meshData.centerPoint.z);
+        //if there's recently been an origin update, then this check ensures that all position data is correct 
+        if (meshGen.meshData.planetCenter == planetSettings.center) {
+            node.obj.position = new Vector3((float)meshGen.meshData.centerPoint.x, (float)meshGen.meshData.centerPoint.y, (float)meshGen.meshData.centerPoint.z);
+        } else {
+            node.obj.position = new Vector3((float)meshGen.meshData.centerPoint.x, (float)meshGen.meshData.centerPoint.y, (float)meshGen.meshData.centerPoint.z) - (meshGen.meshData.planetCenter - planetSettings.center);
+        }
 
         meshGen = null;
-
         node.generating = false;
     }
 
@@ -219,6 +220,14 @@ public class PlanetController : MonoBehaviour {
         node.children = new Node[0];
 
         node.nodeState = NodeState.Idle;
+    }
+
+    public void UpdatePositions (Vector3 vec) {
+        planetSettings.center -= vec;
+
+        for (int i = 0; i < nodes.Count; i++) {
+            nodes[i].obj.position -= vec;
+        }
     }
 }
 

@@ -26,5 +26,9 @@ public class Chunk : MonoBehaviour {
         }
     }
 
-    public Vector3 position;
+    private Vector3 _position;
+    public Vector3 position {
+        get { return _position; }
+        set { _position = value; transform.position = value; }
+    }
 }
