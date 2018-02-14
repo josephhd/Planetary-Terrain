@@ -7,7 +7,6 @@ public class Node {
     public NodeState nodeState;
     public bool generating;
 
-
     //Node information
     public Chunk obj;
 

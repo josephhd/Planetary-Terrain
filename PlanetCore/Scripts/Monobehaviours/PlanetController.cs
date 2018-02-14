@@ -1,7 +1,5 @@
-﻿//TODO: further optimize nodes list by storing parents in nodes, and removing
-//parents from the node list if they are 2 subdivisions max from maximum sub level
-
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
 using System.Threading;
 using VectorDoubles;
@@ -13,10 +11,6 @@ public class PlanetController : MonoBehaviour {
 
     private List<Node> nodes = new List<Node>();
 
-    //How many items are allowed to spawn within 1 frame
-    public byte MaxActions = 16;
-    private byte currentActions = 0;
-
     //Prevent out of bounds values from being used
     private void OnValidate() {
         if (planetSettings.resolution < 3)
@@ -25,66 +19,62 @@ public class PlanetController : MonoBehaviour {
         if (planetSettings.radius < 1)
             planetSettings.radius = 1;
 
-        if (MaxActions == 0)
-            MaxActions = 1;
-
         if (planetSettings.minSubLevel > planetSettings.maxSubLevel)
             planetSettings.minSubLevel = planetSettings.maxSubLevel;
     }
 
     void Start() {
         InitializePlanet();
+
+        StartCoroutine(UpdateChunks());
     }
 
     //Iterate through nodes and perform actions as necessary
-    private void Update() {
-        currentActions = 0;
-            
-        Vector3 cameraPos = Camera.main.transform.position;
+    IEnumerator UpdateChunks () {
+        while (true) {
+            Vector3 cameraPos = Camera.main.transform.position;
 
-        //Loop through the list of nodes
-        for (int i = 0; i < nodes.Count; i++) {
-            Node n = nodes[i];
-          
-            //Determine if the node should split, merge, or get create a mesh
-            if (currentActions < MaxActions) {
+            //Loop through the list of nodes
+            for (int i = 0; i < nodes.Count; i++) {
+                Node n = nodes[i];
+
+                //Determine if the node should split, merge, or get create a mesh
                 if (n.generating) {
                     if (n.meshGen.Complete) {
                         CreateMesh(n);
-                        currentActions++;
                     }
                 } else if (n.children.Length == 0 && n.subLevel < planetSettings.maxSubLevel) {
                     float distance = (cameraPos - n.obj.position).sqrMagnitude;
 
-                    if (distance <= n.splitDist * n.splitDist || n.subLevel < planetSettings.minSubLevel) {
+                    if (distance <= n.splitDist || n.subLevel < planetSettings.minSubLevel) {
                         SplitNode(n);
-                        currentActions++;
                     }
                 } else if (n.children.Length > 0) {
                     float distance = (cameraPos - n.obj.position).sqrMagnitude;
 
-                    if (distance > n.splitDist * n.splitDist && n.subLevel + 1 > planetSettings.minSubLevel) {
+                    if (distance > n.splitDist && n.subLevel + 1 > planetSettings.minSubLevel) {
                         MergeNode(n);
-                        currentActions++;
                     }
+                }
+
+                //Only destroy children/meshes if meshes are currently generated
+                switch (n.nodeState) {
+                    case NodeState.Splitting:
+                        if (!n.children[0].generating && !n.children[1].generating && !n.children[2].generating && !n.children[3].generating)
+                            DestroyMeshes(n);
+                        break;
+
+                    case NodeState.Merging:
+                        if (!n.generating && n.children.Length > 0)
+                            DestroyChildren(n);
+                        break;
+
+                    default:
+                        break;
                 }
             }
 
-            //Only destroy children/meshes if meshes are currently generated
-            switch (n.nodeState) {
-                case NodeState.Splitting:
-                    if (!n.children[0].generating && !n.children[1].generating && !n.children[2].generating && !n.children[3].generating)
-                        DestroyMeshes(n);
-                    break;
-
-                case NodeState.Merging:
-                    if (!n.generating && n.children.Length > 0) 
-                        DestroyChildren(n);
-                    break;
-
-                default:
-                    break;
-            }
+            yield return new WaitForSeconds(0.1f);
         }
     }
 
@@ -144,7 +134,7 @@ public class PlanetController : MonoBehaviour {
             node.children[i] = new Node {
                 nodeState = NodeState.Idle,
                 obj = gos[i].GetComponent<Chunk>(),
-                splitDist = c_scale * planetSettings.radius * 5f,
+                splitDist = 25f * c_scale * c_scale * planetSettings.radius * planetSettings.radius,
                 subLevel = c_subLevel,
                 scale = c_scale,
                 rotation = node.rotation,
@@ -176,7 +166,7 @@ public class PlanetController : MonoBehaviour {
         mesh.SetUVs(0, meshGen.meshData.uvs);
 
         node.obj.MeshFilter.sharedMesh = mesh;
-        //node.obj.MeshCollider.sharedMesh = mesh;
+        node.obj.MeshCollider.sharedMesh = mesh;
 
         //if there's recently been an origin update, then this check ensures that all position data is correct 
         if (meshGen.meshData.planetCenter == planetSettings.center) {
@@ -185,6 +175,7 @@ public class PlanetController : MonoBehaviour {
             node.obj.position = new Vector3((float)meshGen.meshData.centerPoint.x, (float)meshGen.meshData.centerPoint.y, (float)meshGen.meshData.centerPoint.z) - (meshGen.meshData.planetCenter - planetSettings.center);
         }
 
+        meshGen.meshData = null;
         meshGen = null;
         node.generating = false;
     }
@@ -200,7 +191,7 @@ public class PlanetController : MonoBehaviour {
     //Destroys all meshes connected to the node's chunk
     private void DestroyMeshes (Node node) {
         DestroyImmediate(node.obj.MeshFilter.sharedMesh);
-        //DestroyImmediate(node.obj.MeshCollider.sharedMesh);
+        DestroyImmediate(node.obj.MeshCollider.sharedMesh);
 
         node.nodeState = NodeState.Idle;
     }

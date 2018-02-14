@@ -10,7 +10,7 @@ public class FloatingOrigin : MonoBehaviour {
         Vector3 cameraPosition = transform.position;
 
 	    if (cameraPosition.sqrMagnitude > maxDist * maxDist) {
-            transform.position -= cameraPosition;
+            transform.root.position -= cameraPosition;
 
             GameObject[] planets = GameObject.FindGameObjectsWithTag("Planet");
 

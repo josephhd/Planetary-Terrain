@@ -7,7 +7,6 @@ using System;
 public class MeshGenerator {
     public MeshGenerator (PlanetSettings PlanetSettings, NoiseSettings NoiseSettings, Node CallerNode){
         planetSettings = PlanetSettings;
-        noiseSettings = NoiseSettings;
         callerNode = CallerNode;
 
         #region Define Important Values
@@ -24,7 +23,7 @@ public class MeshGenerator {
         uvs = new List<Vector2>(verts + 1 * verts + 1);
         triangles = new List<int>(6 * (verts + 1 - 1) * (verts + 1 - 1));
 
-        noiseGenerator = new NoiseVector(noiseSettings);
+        noiseGenerator = new NoiseVector(NoiseSettings);
 
         #endregion
     }
@@ -34,7 +33,6 @@ public class MeshGenerator {
     }
 
     private PlanetSettings planetSettings;
-    private NoiseSettings noiseSettings;
     private Node callerNode;
 
     private int verts;
@@ -57,7 +55,7 @@ public class MeshGenerator {
         
         //Calculate tile center (for gameobject "node" position)
         Vector3Double intialPos = callerNode.rotation * SphereizedPos(tileCenter, tileCenter, callerNode.scale);
-        Vector3Double noiseVector = noiseSettings.amplitude * GetNoiseVector(intialPos);
+        Vector3Double noiseVector = intialPos * noiseGenerator.GetNoiseValue(intialPos);
         Vector3Double center = radius * intialPos + noiseVector;
 
         GenerateVertices(center);
@@ -79,11 +77,11 @@ public class MeshGenerator {
         Vector3 vertexPosition = new Vector3();
 
         for (int y = 0; y < verts + 1; y++) {
-            for (int x = 0; x < verts + 1; x++) {
+            for (int x = 0; x < verts + 1; x++) { 
                 //Set sphereized position, and subtract center position (brings coordinates back into range of floats)
                 //Calculate sphereized position
                 s = callerNode.rotation * SphereizedPos(x, y, callerNode.scale);
-                noiseVec = noiseSettings.amplitude * GetNoiseVector(s);
+                noiseVec = s * noiseGenerator.GetNoiseValue(s);
 
                 s = radius * s;
                 s += noiseVec;
@@ -249,11 +247,6 @@ public class MeshGenerator {
             }
         }
     }   
-
-    //Gets a displacement vector from perlin noise (see NoiseVecGenertor)
-    private Vector3Double GetNoiseVector(Vector3Double coord) {
-        return noiseGenerator.GetNoiseVector(coord);
-    }
 
     //Calculate the sphereized position of the chunk
     private Vector3Double SphereizedPos (double x, double y, double scale) {
