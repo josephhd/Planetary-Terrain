@@ -94,7 +94,7 @@ public class PlanetController : MonoBehaviour {
                 subLevel = 0,
                 scale = 1,
                 children = new Node[0],
-                splitDist = planetSettings.radius * 5f
+                splitDist = 25f * planetSettings.radius * planetSettings.radius
             };
 
             nodes.Add(Nodes[i]);

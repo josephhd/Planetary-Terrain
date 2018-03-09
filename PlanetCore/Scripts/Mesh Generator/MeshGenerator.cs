@@ -103,7 +103,7 @@ public class MeshGenerator {
 
         for (int y = 0; y < verts + 1; y++) {
             for (int x = 0; x < verts + 1; x++) {
-                if (y < verts + 1 - 1 && x < verts + 1 - 1) {
+                if (y < verts && x < verts) {
                     Vector3 A = vertices[vertexIndex];
                     Vector3 B = vertices[vertexIndex + 1];
                     Vector3 C = vertices[vertexIndex + verts + 1];
